@@ -49,23 +49,17 @@ app.post("/parse", (req:Request, res:Response) => {
 const parse_handwriting = (recipeName: string): string | null => {
   const hyphensUnderscoresToWhitespace = (text: string) => text.replace(/[\-_]/g, " ");
   const keepLettersAndWhitespace = (text: string) => text.replace(/[^a-zA-Z ]/g, "")
-  const capitalise = (text: string) => 
-    text.split(" ")
-        .map(word => {
-          word = word.toLocaleLowerCase();
-          return word.charAt(0).toUpperCase() + word.slice(1)
-        })
-        .join(" ")
-  const removeExcessWhitespace = (text: string) =>
-    text.split(" ")
-        .filter(word => word.length !== 0)
-        .join(" ")
+  const removeExcessWhitespace = (text: string) => text.trim().replace(/\s+/g, " ")
+  const capitalise = (text: string) => text.replace(/\w+/g, (word) => {
+    word = word.toLocaleLowerCase();
+    return word.charAt(0).toUpperCase() + word.slice(1)
+  })
 
   const transformers: TextTransformer[] = [
     hyphensUnderscoresToWhitespace,
     keepLettersAndWhitespace,
+    removeExcessWhitespace,
     capitalise,
-    removeExcessWhitespace
   ];
 
   recipeName = transformers.reduce((text, transformer) => transformer(text), recipeName);
