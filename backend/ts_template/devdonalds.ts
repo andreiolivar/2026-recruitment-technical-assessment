@@ -19,6 +19,8 @@ interface ingredient extends cookbookEntry {
   cookTime: number;
 }
 
+type TextTransformer = (text: string) => string;
+
 // =============================================================================
 // ==== HTTP Endpoint Stubs ====================================================
 // =============================================================================
@@ -45,8 +47,34 @@ app.post("/parse", (req:Request, res:Response) => {
 // [TASK 1] ====================================================================
 // Takes in a recipeName and returns it in a form that 
 const parse_handwriting = (recipeName: string): string | null => {
-  // TODO: implement me
-  return recipeName
+  const hyphensUnderscoresToWhitespace = (text: string) => text.replace(/[\-_]/g, " ");
+  const keepLettersAndWhitespace = (text: string) => text.replace(/[^a-zA-Z ]/g, "")
+  const capitalise = (text: string) => 
+    text.split(" ")
+        .map(word => {
+          word = word.toLocaleLowerCase();
+          return word.charAt(0).toUpperCase() + word.slice(1)
+        })
+        .join(" ")
+  const removeExcessWhitespace = (text: string) =>
+    text.split(" ")
+        .filter(word => word.length !== 0)
+        .join(" ")
+
+  const transformers: TextTransformer[] = [
+    hyphensUnderscoresToWhitespace,
+    keepLettersAndWhitespace,
+    capitalise,
+    removeExcessWhitespace
+  ];
+
+  recipeName = transformers.reduce((text, transformer) => transformer(text), recipeName);
+
+  if (recipeName.length > 0) {
+    return recipeName;
+  }
+  
+  return null;
 }
 
 // [TASK 2] ====================================================================
