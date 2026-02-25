@@ -1,21 +1,17 @@
 import express, { Request, Response } from "express";
 import z, { ZodError } from "zod";
 
-// ==== Type Definitions, feel free to add or modify ==========================
+// ==== Schemas ===================================
 const requiredItemSchema = z.object({
   name: z.string(),
   quantity: z.number().min(0)
 });
-
-type RequiredItem = z.infer<typeof requiredItemSchema>
 
 const recipeSchema = z.object({
   type: z.literal("recipe"),
   name: z.string(),
   requiredItems: z.array(requiredItemSchema)
 });
-
-type Recipe = z.infer<typeof recipeSchema>
 
 const ingredientSchema = z.object({
   type: z.literal("ingredient"),
@@ -25,16 +21,31 @@ const ingredientSchema = z.object({
 
 const cookbookEntrySchema = z.discriminatedUnion("type", [recipeSchema, ingredientSchema]);
 
-type CookbookEntry = z.infer<typeof cookbookEntrySchema>
-
+// ==== Type Definitions ==========================
 type TextTransformer = (text: string) => string;
 
-// ==== Cookbook ==========================
-// Store your recipes here!
-const cookbook: CookbookEntry[] = [];
+type RequiredItem = z.infer<typeof requiredItemSchema>
+type Recipe = z.infer<typeof recipeSchema>
+type CookbookEntry = z.infer<typeof cookbookEntrySchema>
 
-const findEntryByName = (name: string): CookbookEntry | undefined => cookbook.find(e => e.name === name)
+// ==== Cookbook Service ==========================
+const cookbook: Map<string, CookbookEntry> = new Map();
 
+/**
+ * Finds and returns the given name in the cookbook
+ * 
+ * @param name the name of the recipe/ingredient to find
+ * @returns the entry corresponding to the given name. Returns undefined otherwise.
+ */
+const findEntryByName = (name: string): CookbookEntry | undefined => cookbook.get(name)
+
+/**
+ * Inserts the given entry to the cookbook. Throws an error if any of the following are true:
+ * - entry name already exists in the cookbook
+ * - entry's required items contain multiple instances of the same item
+ * 
+ * @param entry The entry to insert
+ */
 const insertEntry = (entry: CookbookEntry) => { 
   if (findEntryByName(entry.name) !== undefined) {
     throw new Error("Entry name already exists");
@@ -49,9 +60,20 @@ const insertEntry = (entry: CookbookEntry) => {
     }
   }
 
-  cookbook.push(entry);
+  cookbook.set(entry.name, entry);
 }
 
+/**
+ * Given a recipe, return its summary which contains information including its name, total cooking time,
+ * and the total amount of ingredients. Throws an error if any of the following are true:
+ * - the recipe name does not refer to an existing recipe in the cookbook
+ * - the given name refers to an ingredient
+ * - the recipe has itself as a requirement
+ * - any required item of the recipe does not exist in the cookbook
+ * 
+ * @param recipeName 
+ * @returns The corresponding recipe's summary
+ */
 const getSummaryByRecipeName = (recipeName: string) => {
   const entry = findEntryByName(recipeName);
 
@@ -64,48 +86,53 @@ const getSummaryByRecipeName = (recipeName: string) => {
   }
 
   const getIngredients = (recipe: Recipe): RequiredItem[]  => {
-    const ingredients: RequiredItem[] = []
+    const ingredients: Map<string, RequiredItem> = new Map()
 
     const addIngredient = (ingredient: RequiredItem) => {
-      const foundIngredient = ingredients.find(i => i.name === ingredient.name);
+      const foundIngredient = ingredients.get(ingredient.name)
+      
       if (!foundIngredient) {
-        ingredients.push(ingredient)
+        ingredients.set(ingredient.name, ingredient)
       } else {
         foundIngredient.quantity += ingredient.quantity
       }
     }
     
-    for (const item of recipe.requiredItems) {
-      if (item.name === recipeName) {
+    for (const requiredItem of recipe.requiredItems) {
+      if (requiredItem.name === recipeName) {
         throw new Error("Recipe cannot have itself as a requirement")
       }
 
-      const foundEntry = findEntryByName(item.name);
+      const foundEntry = findEntryByName(requiredItem.name);
       if (!foundEntry) {
-        throw new Error(`Required item ${name} does not exist in the cookbook`)
+        throw new Error(`Required item ${requiredItem.name} does not exist in the cookbook`)
       }
 
       if (foundEntry.type === "recipe") {
         getIngredients(foundEntry).forEach(addIngredient);
       } else {
-        addIngredient(item)
+        addIngredient(requiredItem)
       }
     }
 
-    return ingredients;
+    return Array.from(ingredients.values())
   }
 
   return {
-    type: "recipe",
+    type: entry.type,
     name: entry.name,
     ingredients: getIngredients(entry)
   }
 }
 
 // ==== Helpers ==========================
-// const formatError = (err: any) {
-
-// }
+const formatError = (err: unknown) => {
+  if (err instanceof ZodError) {
+    return z.treeifyError(err)
+  } else {
+    return { message: err }
+  }
+}
 
 // =============================================================================
 // ==== HTTP Endpoint Stubs ====================================================
@@ -159,14 +186,12 @@ const parse_handwriting = (recipeName: string): string | null => {
 app.post("/entry", (req:Request, res:Response) => {
   try {
     const data = cookbookEntrySchema.parse(req.body);
+
     insertEntry(data);
+
     res.status(200).json({});
   } catch (err) {
-    if (err instanceof ZodError) {
-      res.status(400).json(z.treeifyError(err));
-    } else {
-      res.status(400).json({ message: err })
-    }
+    res.status(400).json(formatError(err));
   }
 });
 
@@ -180,15 +205,8 @@ app.get("/summary", (req:Request, res:Request) => {
     
     res.status(200).json(getSummaryByRecipeName(name));
   } catch (err) {
-    if (err instanceof ZodError) {
-      res.status(400).json(z.treeifyError(err));
-    } else {
-      res.status(400).json({ message: err })
-    }
+    res.status(400).json(formatError(err));
   }
-  // TODO: implement me
-  res.status(500).send("not yet implemented!")
-
 });
 
 // =============================================================================
