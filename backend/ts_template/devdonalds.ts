@@ -1,5 +1,5 @@
 import express, { Request, Response } from "express";
-import z from "zod";
+import z, { ZodError } from "zod";
 
 // ==== Type Definitions, feel free to add or modify ==========================
 const requiredItemSchema = z.object({
@@ -21,20 +21,37 @@ const ingredientSchema = z.object({
 
 const cookbookEntrySchema = z.discriminatedUnion("type", [recipeSchema, ingredientSchema]);
 
-const cookbookSchema = z.array(cookbookEntrySchema);
-type Cookbook = z.infer<typeof cookbookSchema>;
-
+type CookbookEntry = z.infer<typeof cookbookEntrySchema>
 
 type TextTransformer = (text: string) => string;
+
+// ==== Cookbook ==========================
+// Store your recipes here!
+const cookbook: CookbookEntry[] = [];
+
+const findEntryByName = (name: string): CookbookEntry | undefined => cookbook.find(e => e.name === name)
+const insertEntry = (entry: CookbookEntry) => { 
+  if (findEntryByName(entry.name) !== undefined) {
+    throw new Error("Entry name already exists");
+  }
+
+  if (entry.type === "recipe") {
+    const names = entry.requiredItems.map(entry => entry.name);
+    const namesSet = new Set(names);
+
+    if (names.length !== namesSet.size) {
+      throw new Error("Required items can only have one element per name");
+    }
+  }
+
+  cookbook.push(entry);
+}
 
 // =============================================================================
 // ==== HTTP Endpoint Stubs ====================================================
 // =============================================================================
 const app = express();
 app.use(express.json());
-
-// Store your recipes here!
-const cookbook: Cookbook = [];
 
 // Task 1 helper (don't touch)
 app.post("/parse", (req:Request, res:Response) => {
@@ -80,30 +97,17 @@ const parse_handwriting = (recipeName: string): string | null => {
 // [TASK 2] ====================================================================
 // Endpoint that adds a CookbookEntry to your magical cookbook
 app.post("/entry", (req:Request, res:Response) => {
-  const parsed = cookbookEntrySchema.safeParse(req.body);
-
-  if (!parsed.success) {
-    res.status(400).json(z.treeifyError(parsed.error));
-  }
-
-  const data = parsed.data;
-
-  if (cookbook.find(entry => entry.name === data.name) !== undefined) {
-    res.status(400).json({ message: "Entry name already exists." });
-  }
-
-  if (data.type === "recipe") {
-    const names = data.requiredItems.map(entry => entry.name);
-    const namesSet = new Set(names);
-
-    if (names.length !== namesSet.size) {
-      res.status(400).json({ message: "Required items can only have one element per name" });
+  try {
+    const data = cookbookEntrySchema.parse(req.body);
+    insertEntry(data);
+    res.status(200).json({});
+  } catch (err) {
+    if (err instanceof ZodError) {
+      res.status(400).json(z.treeifyError(err));
+    } else {
+      res.status(400).json({ message: err })
     }
   }
-
-  cookbook.push(data);
-
-  res.status(200).json({});
 });
 
 // [TASK 3] ====================================================================
