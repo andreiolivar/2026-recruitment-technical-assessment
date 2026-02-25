@@ -7,11 +7,15 @@ const requiredItemSchema = z.object({
   quantity: z.number().min(0)
 });
 
+type RequiredItem = z.infer<typeof requiredItemSchema>
+
 const recipeSchema = z.object({
   type: z.literal("recipe"),
   name: z.string(),
   requiredItems: z.array(requiredItemSchema)
 });
+
+type Recipe = z.infer<typeof recipeSchema>
 
 const ingredientSchema = z.object({
   type: z.literal("ingredient"),
@@ -30,6 +34,7 @@ type TextTransformer = (text: string) => string;
 const cookbook: CookbookEntry[] = [];
 
 const findEntryByName = (name: string): CookbookEntry | undefined => cookbook.find(e => e.name === name)
+
 const insertEntry = (entry: CookbookEntry) => { 
   if (findEntryByName(entry.name) !== undefined) {
     throw new Error("Entry name already exists");
@@ -46,6 +51,61 @@ const insertEntry = (entry: CookbookEntry) => {
 
   cookbook.push(entry);
 }
+
+const getSummaryByRecipeName = (recipeName: string) => {
+  const entry = findEntryByName(recipeName);
+
+  if (entry === undefined) {
+    throw new Error("Recipe does not exist");
+  }
+
+  if (entry.type !== "recipe") {
+    throw new Error("Searched name must be a recipe")
+  }
+
+  const getIngredients = (recipe: Recipe): RequiredItem[]  => {
+    const ingredients: RequiredItem[] = []
+
+    const addIngredient = (ingredient: RequiredItem) => {
+      const foundIngredient = ingredients.find(i => i.name === ingredient.name);
+      if (!foundIngredient) {
+        ingredients.push(ingredient)
+      } else {
+        foundIngredient.quantity += ingredient.quantity
+      }
+    }
+    
+    for (const item of recipe.requiredItems) {
+      if (item.name === recipeName) {
+        throw new Error("Recipe cannot have itself as a requirement")
+      }
+
+      const foundEntry = findEntryByName(item.name);
+      if (!foundEntry) {
+        throw new Error(`Required item ${name} does not exist in the cookbook`)
+      }
+
+      if (foundEntry.type === "recipe") {
+        getIngredients(foundEntry).forEach(addIngredient);
+      } else {
+        addIngredient(item)
+      }
+    }
+
+    return ingredients;
+  }
+
+  return {
+    type: "recipe",
+    name: entry.name,
+    ingredients: getIngredients(entry)
+  }
+}
+
+// ==== Helpers ==========================
+// const formatError = (err: any) {
+
+// }
 
 // =============================================================================
 // ==== HTTP Endpoint Stubs ====================================================
@@ -113,6 +173,19 @@ app.post("/entry", (req:Request, res:Response) => {
 // [TASK 3] ====================================================================
 // Endpoint that returns a summary of a recipe that corresponds to a query name
 app.get("/summary", (req:Request, res:Request) => {
+  try {
+    const querySchema = z.object({ name: z.string() });
+
+    const { name } = querySchema.parse(req.query);
+    
+    res.status(200).json(getSummaryByRecipeName(name));
+  } catch (err) {
+    if (err instanceof ZodError) {
+      res.status(400).json(z.treeifyError(err));
+    } else {
+      res.status(400).json({ message: err })
+    }
+  }
   // TODO: implement me
   res.status(500).send("not yet implemented!")
 
