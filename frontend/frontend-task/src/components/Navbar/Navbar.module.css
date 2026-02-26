@@ -1,0 +1,53 @@
+.container {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    padding-left: 8px;
+    padding-right: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgb(228, 228, 228);
+}
+
+.logo {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.logoIcon {
+    height: 48px;
+}
+
+.logoIcon:hover {
+    cursor: pointer;
+}
+
+.logoName {
+    font-size: 36px;
+    color: #ef6c02;
+    margin: 0;
+}
+
+.icon {
+    color: #ef6c02;
+    border: 1px solid #ef6c02;
+    border-radius: 4px;
+    padding: 8px 8px;
+    background-color: #ffffff;
+    
+}
+
+.icon:hover {
+    color: #ffffff;
+    background-color: #ef6c02;
+    cursor: pointer;
+}
+
+.iconsContainer {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px
+}
