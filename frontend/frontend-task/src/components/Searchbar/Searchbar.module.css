@@ -1,19 +1,20 @@
 .container {
     display: flex;
     justify-content: space-between;
-    padding-left: 16px;
-    padding-right: 16px;
+    gap: 1rem;
 }
 
 .button {
     display: flex;
+    justify-content: flex-start;
     align-items: center;
-    gap: 16px;
+    gap: 1rem;
     color: #f78223;
-    border: 2px solid #ef7021;
+    border: 1px solid #ef7021;
     border-radius: 8px;
-    font-size: 16px;
-    padding: 8px 32px;
+    font-size: 1rem;
+    font-weight: bold;
+    padding: 0.25rem 2.5rem;
     background-color: #ffffff;
 }
 
@@ -23,29 +24,24 @@
     background-color: #ef7021;
 }
 
-.buttonIcon {
-    height: 16px;
-    width: 16px;
-}
-
 .searchContainer {
     display: flex;
     flex-direction: row;
     align-items: center;
     justify-content: flex-start;
-    gap: 8px;
+    gap: 0.5rem;
     border: 1px solid #a7a7a7;
     border-radius: 2px;
     color: #747474;
-    padding: 12px 16px;
+    padding: 0.75rem 1rem;
     height: fit-content;
-    width: 756px;
+    width: 50%;
 }
 
 .searchbar {
-    font-size: 16px;
+    font-size: 1rem;
     width: 100%;
-    gap: 8px;
+    gap: 0.5rem;
     background-color: white;
     border: none;
     outline: none;
@@ -53,4 +49,23 @@
 
 .searchbar:hover {
     cursor: text
+}
+
+/* Phones */
+@media (max-width: 480px) {
+    .button>span {
+        display: none;
+    }
+
+    .button {
+        padding: 0.5rem;
+    }
+
+    .container {
+        gap: 1rem;
+    }
+
+    .searchContainer {
+        width: 100%;
+    }
 }

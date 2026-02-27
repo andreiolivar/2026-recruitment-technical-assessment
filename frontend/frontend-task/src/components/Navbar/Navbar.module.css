@@ -1,12 +1,9 @@
 .container {
     margin: 0;
-    padding: 0;
+    padding: 0.5rem 1.5rem;
     display: flex;
     flex-direction: row;
     justify-content: space-between;
-    padding-left: 8px;
-    padding-right: 8px;
-    padding-bottom: 8px;
     border-bottom: 1px solid rgb(228, 228, 228);
     margin-bottom: 16px;
 }
@@ -26,24 +23,30 @@
 }
 
 .logoName {
-    font-size: 36px;
-    color: #ef6c02;
+    font-size: 2rem;
+    font-weight: 500;
+    color: var(--primary-colour);
     margin: 0;
 }
 
 .icon {
-    color: #ef6c02;
-    border: 1px solid #ef6c02;
+    color: var(--primary-colour);
+    border: 1px solid #f9bb87;
+    height: 2.5rem;
+    width: 2.5rem;
     border-radius: 4px;
-    padding: 8px 8px;
+    padding: 0.25rem;
     background-color: #ffffff;
-    
 }
 
-.icon:hover {
+.iconClicked {
     color: #ffffff;
-    background-color: #ef6c02;
+    background-color: var(--primary-colour);
+}
+
+.icon:not(.iconClicked):hover {
     cursor: pointer;
+    background-color: #fef9f5;
 }
 
 .iconsContainer {
@@ -51,4 +54,11 @@
     flex-direction: row;
     align-items: center;
     gap: 8px
+}
+
+/* Phones */
+@media (max-width: 480px) {
+    .logoName {
+        display: none;
+    }
 }

@@ -1,0 +1,30 @@
+.container {
+    padding: 0rem 1rem;
+}
+
+.roomsContainer {
+    margin-top: 1rem;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1rem;
+}
+
+/* Phones */
+@media (max-width: 480px) {
+    .roomsContainer {
+        display: flex;
+        flex-direction: column;
+    }
+}
+
+/* Tablets */
+@media (min-width: 481px) and (max-width: 1024px) {
+    .roomsContainer {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+@media (min-width: 1025px) and (max-width: 1350px) {
+    .roomsContainer {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
